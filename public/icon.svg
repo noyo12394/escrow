@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#49d0ff"/>
+      <stop offset="1" stop-color="#8affc1"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="36" fill="#05080f"/>
+  <path d="M40 132 L74 60 L96 104 L112 78 L152 132 Z" fill="none" stroke="url(#g)" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="96" cy="44" r="12" fill="#ff5a6e"/>
+  <text x="96" y="172" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="700" fill="#e8eefc" text-anchor="middle">S.T.A.R.</text>
+</svg>
