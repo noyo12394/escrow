@@ -66,8 +66,8 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x05080f);
-scene.fog = new THREE.Fog(0x05080f, 18, 42);
+scene.background = new THREE.Color(0x0b1220);
+scene.fog = new THREE.Fog(0x0b1220, 26, 60);
 
 const camera = new THREE.PerspectiveCamera(
   55,
@@ -75,26 +75,26 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   100
 );
-camera.position.set(0, 6.5, 15);
+camera.position.set(16.7, 16.4, -9.8);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.minDistance = 6;
-controls.maxDistance = 24;
+controls.maxDistance = 30;
 controls.maxPolarAngle = Math.PI * 0.49;
-controls.target.set(0, 2, 0);
+controls.target.set(0, 1.5, -2);
 controls.update();
 
 // -----------------------------------------------------------------------------
 // Lighting (emergency / low-power feel)
 // -----------------------------------------------------------------------------
-scene.add(new THREE.AmbientLight(0x4a5a78, 0.55));
+scene.add(new THREE.AmbientLight(0x8a9bc0, 1.0));
 
-const hemi = new THREE.HemisphereLight(0x6688bb, 0x1a1410, 0.5);
+const hemi = new THREE.HemisphereLight(0x9fc0ff, 0x2a2018, 0.9);
 scene.add(hemi);
 
-const keyLight = new THREE.DirectionalLight(0xbfd4ff, 0.7);
+const keyLight = new THREE.DirectionalLight(0xdce9ff, 1.15);
 keyLight.position.set(6, 14, 8);
 keyLight.castShadow = true;
 keyLight.shadow.mapSize.set(1024, 1024);
@@ -105,9 +105,14 @@ keyLight.shadow.camera.bottom = -16;
 scene.add(keyLight);
 
 // A flickering emergency lamp adds atmosphere.
-const emergencyLamp = new THREE.PointLight(0xff6a4d, 1.1, 22, 2);
+const emergencyLamp = new THREE.PointLight(0xff7a52, 1.5, 26, 2);
 emergencyLamp.position.set(0, 5.2, 0);
 scene.add(emergencyLamp);
+
+// A cool fill light keeps the far corners readable.
+const fillLight = new THREE.PointLight(0x6fa8ff, 0.9, 30, 2);
+fillLight.position.set(-4, 4.5, 6);
+scene.add(fillLight);
 
 // -----------------------------------------------------------------------------
 // Materials
