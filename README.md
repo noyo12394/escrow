@@ -89,10 +89,59 @@ view reveals the full expert order and rationale at any time.
   buttons for Ranking Board, Expert Key, Help, Enable Alerts, and Reset.
 - **Drag-and-drop ranking board** with accessible ▲ ▼ controls and a shuffle.
 - **Worksheet scoring**, score table, rating bands, and `.txt` report export.
-- **Instructor expert-order reveal**.
+- **One-time name sign-in** with per-player activity logging to **Supabase**
+  (graceful local-only fallback when not configured).
+- **Procedural audio** (Web Audio API) — ambient rumble, drips/creaks, UI clicks,
+  and correct/incorrect/submit cues, with a mute toggle.
+- **Scene realism** — drifting dust motes and a flashlight light pool.
+- **Locked instructor Expert Key** — hidden until the player submits, or an
+  instructor enters the key.
 - **Background notifications** (see below).
 - Responsive layout, keyboard-accessible buttons, ARIA live announcements,
   reduced-motion support, and a mission-complete celebration.
+
+---
+
+## Sign-in &amp; activity logging (Supabase)
+
+This is the **week-one** activity. Each player signs in once with their name
+(stored in `localStorage`, so returning users skip it), and their activity is
+recorded to **Supabase**:
+
+- **`players`** — one row per name (one-time registration; existing names are
+  recognized, not duplicated).
+- **`activity`** — a stream of events (`login`/`register`, `investigate`,
+  `answer`, `submit`, `view_expert`, `download`, `reset`), each tagged with the
+  `week`.
+- **`submissions`** — each completed ranking with its worksheet `score`, the
+  full ordered ranking, and which questions were answered correctly.
+
+### Setup
+
+1. Create a project at [supabase.com](https://supabase.com).
+2. In the Supabase **SQL Editor**, run [`supabase/schema.sql`](supabase/schema.sql)
+   (creates the tables and Row Level Security policies).
+3. Provide the project credentials as environment variables (see `.env.example`):
+
+   ```
+   VITE_SUPABASE_URL=https://<your-project>.supabase.co
+   VITE_SUPABASE_ANON_KEY=<your-anon-key>
+   ```
+
+   - **Local:** copy `.env.example` to `.env` and fill these in.
+   - **Vercel:** Project → **Settings → Environment Variables** → add both keys,
+     then redeploy.
+
+The browser uses the public **anon key**, which is safe to expose when Row Level
+Security is on (the schema enables it). Without these variables the game runs in
+**local-only mode**: fully playable, but nothing is recorded (the HUD shows a
+`local` tag).
+
+### Expert Key lock
+
+The instructor Expert Key is hidden until a player **submits their ranking**, or
+an instructor enters the key **`instruct26`** (configurable as `INSTRUCTOR_KEY`
+in `src/main.js`).
 
 ---
 
@@ -136,13 +185,18 @@ can confirm it works. Notes:
 ├── styles.css                # All UI styling (responsive, accessible)
 ├── package.json              # Vite + Three.js
 ├── README.md
+├── .env.example              # Supabase env vars (optional)
+├── supabase/
+│   └── schema.sql            # Tables + RLS policies for activity logging
 ├── public/
 │   ├── sw.js                 # Service worker: notifications, push, periodic sync
 │   ├── manifest.webmanifest  # PWA manifest (installability for background sync)
 │   └── icon.svg              # App / notification icon (procedural SVG)
 └── src/
     ├── gameData.js           # Scenario, 12 cards, expert ranking, hotspots, quizzes
-    ├── main.js               # Three.js scene, raycasting, HUD, board, scoring
+    ├── main.js               # Three.js scene, raycasting, HUD, board, scoring, sign-in
+    ├── audio.js              # Procedural Web Audio sounds + ambient bed
+    ├── supabase.js           # Player registration + activity/submission logging
     └── notify.js             # Enable-Alerts flow + service worker wiring
 ```
 

@@ -12,6 +12,24 @@ import {
   INITIAL_BOARD_ORDER,
   HOTSPOTS,
 } from './gameData.js';
+import * as audio from './audio.js';
+import {
+  supaEnabled,
+  WEEK,
+  registerPlayer,
+  logActivity,
+  saveSubmission,
+} from './supabase.js';
+
+// Instructor passcode that unlocks the Expert Key before submission.
+const INSTRUCTOR_KEY = 'instruct26';
+const PLAYER_KEY = 'star-player-name';
+
+// The signed-in operative's name (null until they sign in this session).
+let playerName = localStorage.getItem(PLAYER_KEY) || null;
+
+// Small helper so logging is always tied to the current player.
+const track = (type, payload) => logActivity(playerName, type, payload);
 
 // -----------------------------------------------------------------------------
 // Global game state
@@ -44,7 +62,12 @@ const dom = {
   btnBoard: document.getElementById('btn-board'),
   btnExpert: document.getElementById('btn-expert'),
   btnHelp: document.getElementById('btn-help'),
+  btnSound: document.getElementById('btn-sound'),
   btnReset: document.getElementById('btn-reset'),
+  playerChip: document.getElementById('player-chip'),
+  introGreeting: document.getElementById('intro-greeting'),
+  introLogin: document.getElementById('intro-login'),
+  introName: document.getElementById('intro-name'),
   modal: document.getElementById('modal'),
   modalBody: document.getElementById('modal-body'),
   modalClose: document.getElementById('modal-close'),
@@ -440,6 +463,7 @@ function onPointerMove(event) {
       const done = state.investigated.has(hotspot.id);
       setScanner(`${hotspot.label}${done ? ' · investigated ✓' : ' · click to investigate'}`);
       dom.canvas.style.cursor = 'pointer';
+      audio.hover();
     } else {
       setScanner('Hover an object to scan it…');
       dom.canvas.style.cursor = 'grab';
@@ -547,13 +571,16 @@ function openQuiz(hotspot) {
   `);
 
   // Mark investigated immediately on open.
+  const firstTime = !state.investigated.has(hotspot.id);
   state.investigated.add(hotspot.id);
   refreshChecklist();
+  audio.open();
+  if (firstTime) track('investigate', { station: hotspot.id, card: hotspot.cardId });
 
   const feedback = document.getElementById('quiz-feedback');
   const buttons = [...dom.modalBody.querySelectorAll('.choice')];
 
-  const reveal = (chosen) => {
+  const reveal = (chosen, silent = false) => {
     buttons.forEach((b) => {
       b.disabled = true;
       const correct = b.dataset.correct === 'true';
@@ -571,16 +598,21 @@ function openQuiz(hotspot) {
       state.answered.add(card.id);
       announce(`Correct answer for ${card.short}.`);
     }
+    if (!silent) {
+      if (isCorrect) audio.correct();
+      else audio.incorrect();
+      track('answer', { card: card.id, correct: isCorrect });
+    }
     refreshReadiness();
     maybeCelebrate();
   };
 
   buttons.forEach((b) => b.addEventListener('click', () => reveal(b)));
 
-  // If they already answered correctly, show the clue right away.
+  // If they already answered correctly, show the clue right away (no re-scoring).
   if (already) {
     const correctBtn = buttons.find((b) => b.dataset.correct === 'true');
-    reveal(correctBtn);
+    reveal(correctBtn, true);
   }
 
   document.getElementById('quiz-done').addEventListener('click', closeModal);
@@ -736,7 +768,20 @@ function submitRanking() {
   state.submitted = true;
   const score = computeScore();
   state.lastScore = score;
+  audio.submit();
   refreshReadiness();
+  updateExpertButton();
+
+  // Record the submission + a snapshot of which questions were answered right.
+  const ranking = score.rows
+    .slice()
+    .sort((a, b) => a.playerRank - b.playerRank)
+    .map((r) => ({ rank: r.playerRank, action: r.card.action, expert: r.expertRank, diff: r.diff }));
+  const answers = {};
+  for (const c of CARDS) answers[c.id] = state.answered.has(c.id);
+  saveSubmission(playerName, score.total, ranking, answers);
+  track('submit', { score: score.total, answeredCorrect: state.answered.size });
+
   showResults(score);
   announce(`Ranking submitted. Your score is ${score.total}. Lower is better.`);
 }
@@ -862,6 +907,7 @@ function downloadReport(score) {
   a.remove();
   URL.revokeObjectURL(url);
   toast('Report downloaded.', 'good');
+  track('download', { score: score.total });
 }
 
 function pad(s, n) {
@@ -869,9 +915,62 @@ function pad(s, n) {
 }
 
 // =============================================================================
-// EXPERT KEY (instructor reveal)
+// EXPERT KEY (instructor reveal) - locked until submission or instructor key
 // =============================================================================
-function openExpert() {
+
+// Gate entry: allow if the player has submitted, otherwise ask for the key.
+function requestExpert() {
+  audio.click();
+  if (state.submitted) {
+    openExpert('submission');
+    return;
+  }
+  openExpertGate();
+}
+
+function openExpertGate() {
+  openModal(`
+    <p class="modal-kicker">Locked · Instructor Only</p>
+    <h2>🔒 Expert Key is Locked</h2>
+    <p class="board-intro">
+      The expert order stays hidden until you <strong>submit your ranking</strong> —
+      or enter the instructor key to reveal it now.
+    </p>
+    <div class="gate">
+      <label for="gate-input" class="gate-label">Instructor key</label>
+      <input id="gate-input" class="gate-input" type="password" autocomplete="off" placeholder="Enter key" />
+      <div class="feedback" id="gate-feedback"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="gate-board">Go to Ranking Board</button>
+      <button class="btn btn-primary" id="gate-submit">Unlock</button>
+    </div>
+  `);
+
+  const input = document.getElementById('gate-input');
+  input.focus();
+  const tryUnlock = () => {
+    if (input.value.trim() === INSTRUCTOR_KEY) {
+      audio.unlocked();
+      openExpert('key');
+    } else {
+      const fb = document.getElementById('gate-feedback');
+      fb.className = 'feedback show no';
+      fb.textContent = 'Incorrect key. Ask your instructor, or submit your answers to unlock.';
+      audio.incorrect();
+      input.select();
+      track('expert_locked_attempt', {});
+    }
+  };
+  document.getElementById('gate-submit').addEventListener('click', tryUnlock);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') tryUnlock();
+  });
+  document.getElementById('gate-board').addEventListener('click', openBoard);
+}
+
+function openExpert(via = 'submission') {
+  track('view_expert', { via });
   const ordered = [...CARDS].sort((a, b) => a.expertRank - b.expertRank);
   const itemsHtml = ordered
     .map(
@@ -915,6 +1014,10 @@ function openHelp() {
     </ul>
     <h3>Scoring</h3>
     <p>For every card we take the absolute difference between your rank and the expert rank, then add them all up. <strong>A lower total score is better</strong> — a perfect match scores 0.</p>
+    <h3>Expert Key</h3>
+    <p>The expert order stays <strong>locked</strong> until you submit your ranking (or your instructor enters their key). Sound can be toggled any time with the <strong>🔊 Sound</strong> button.</p>
+    <h3>Sign-in &amp; progress</h3>
+    <p>You sign in once with your name; your activity is recorded for the weekly exercise. Returning on the same device skips the sign-in automatically.</p>
     <h3>Alerts</h3>
     <p>Use <strong>Enable Alerts</strong> in the toolbar to receive rescue-drill reminders as system notifications — even after you close this tab (where your browser supports background notifications).</p>
     <div class="modal-actions">
@@ -928,16 +1031,20 @@ function openHelp() {
 // RESET
 // =============================================================================
 function resetGame() {
+  audio.click();
   state.investigated.clear();
   state.answered.clear();
   state.boardOrder = [...INITIAL_BOARD_ORDER];
   state.submitted = false;
   state.lastScore = null;
+  celebrated = false;
   refreshChecklist();
   refreshReadiness();
+  updateExpertButton();
   setScanner('Hover an object to scan it…');
   closeModal();
   toast('Mission reset.', 'warn');
+  track('reset', {});
 }
 
 // =============================================================================
@@ -980,16 +1087,100 @@ function announce(msg) {
 // =============================================================================
 // HUD wiring
 // =============================================================================
-dom.btnBoard.addEventListener('click', openBoard);
-dom.btnExpert.addEventListener('click', openExpert);
-dom.btnHelp.addEventListener('click', openHelp);
+dom.btnBoard.addEventListener('click', () => {
+  audio.click();
+  openBoard();
+});
+dom.btnExpert.addEventListener('click', requestExpert);
+dom.btnHelp.addEventListener('click', () => {
+  audio.click();
+  openHelp();
+});
 dom.btnReset.addEventListener('click', resetGame);
 
-dom.introStart.addEventListener('click', () => {
+// Reflect the locked/unlocked state on the Expert Key button.
+function updateExpertButton() {
+  dom.btnExpert.textContent = state.submitted ? 'Expert Key' : '🔒 Expert Key';
+  dom.btnExpert.title = state.submitted
+    ? 'View the expert order and reasoning.'
+    : 'Locked - submit your ranking or enter the instructor key.';
+}
+
+// Sound on/off toggle.
+function refreshSoundButton() {
+  const muted = audio.isMuted();
+  dom.btnSound.textContent = muted ? '🔇 Muted' : '🔊 Sound';
+  dom.btnSound.setAttribute('aria-pressed', String(!muted));
+}
+dom.btnSound.addEventListener('click', () => {
+  const muted = audio.toggleMute();
+  if (!muted) audio.click();
+  refreshSoundButton();
+});
+refreshSoundButton();
+
+// -----------------------------------------------------------------------------
+// One-time name sign-in (intro)
+// -----------------------------------------------------------------------------
+function setupIntro() {
+  if (playerName) {
+    // Returning operative - greet them and skip re-registration.
+    dom.introGreeting.textContent = `Welcome back, ${playerName}. Ready for this week's drill?`;
+    dom.introGreeting.hidden = false;
+    dom.introLogin.hidden = true;
+    dom.introStart.textContent = 'Re-enter the Basement';
+  } else {
+    dom.introName.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') dom.introStart.click();
+    });
+  }
+}
+
+async function handleSignIn() {
+  audio.unlock(); // create the AudioContext from this user gesture
+  audio.click();
+
+  let name = playerName;
+  if (!name) {
+    name = (dom.introName.value || '').trim();
+    if (!name) {
+      dom.introName.focus();
+      toast('Please enter your name to begin.', 'warn');
+      return;
+    }
+  }
+
+  dom.introStart.disabled = true;
+  const original = dom.introStart.textContent;
+  dom.introStart.textContent = 'Signing in…';
+
+  const result = await registerPlayer(name);
+  playerName = name;
+  localStorage.setItem(PLAYER_KEY, name);
+  track(result.returning ? 'login' : 'register', { returning: !!result.returning });
+
+  dom.introStart.disabled = false;
+  dom.introStart.textContent = original;
+  enterGame();
+}
+
+function enterGame() {
   dom.intro.hidden = true;
   dom.hud.hidden = false;
   dom.checklist.hidden = false;
-});
+
+  dom.playerChip.hidden = false;
+  dom.playerChip.innerHTML = `<span class="player-dot"></span> Operative: <strong>${playerName}</strong> · Week ${WEEK}${
+    supaEnabled ? '' : ' · local'
+  }`;
+
+  updateExpertButton();
+  audio.startAmbient();
+  audio.unlocked();
+}
+
+dom.introStart.addEventListener('click', handleSignIn);
+setupIntro();
 
 // =============================================================================
 // BACKGROUND NOTIFICATIONS (service worker + reminders)
@@ -999,12 +1190,65 @@ import { initNotifications } from './notify.js';
 initNotifications({ toast, dom });
 
 // =============================================================================
+// Atmosphere: drifting dust motes + a flashlight pool over the planning table
+// =============================================================================
+let dustPoints = null;
+
+function buildAtmosphere() {
+  const COUNT = 420;
+  const positions = new Float32Array(COUNT * 3);
+  for (let i = 0; i < COUNT; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * (ROOM.w - 1);
+    positions[i * 3 + 1] = Math.random() * (ROOM.h - 0.5);
+    positions[i * 3 + 2] = (Math.random() - 0.5) * (ROOM.d - 1);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const map = makeDustSprite();
+  dustPoints = new THREE.Points(
+    geo,
+    new THREE.PointsMaterial({
+      size: 0.08,
+      map,
+      transparent: true,
+      opacity: 0.5,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      color: 0xbcd0f0,
+    })
+  );
+  scene.add(dustPoints);
+
+  // A warm flashlight cone resting on the planning table for depth.
+  const flashlight = new THREE.SpotLight(0xffe6b0, 22, 16, Math.PI / 7, 0.5, 1.6);
+  flashlight.position.set(-3.2, 3.4, 3.6);
+  flashlight.target.position.set(0, 1.0, 1.0);
+  scene.add(flashlight);
+  scene.add(flashlight.target);
+}
+
+// Tiny radial-gradient sprite so dust motes look soft, generated on a canvas.
+function makeDustSprite() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const g = c.getContext('2d');
+  const grad = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 32, 32);
+  const tex = new THREE.CanvasTexture(c);
+  return tex;
+}
+
+// =============================================================================
 // Build the world + animate
 // =============================================================================
 buildRoom();
 buildStations();
 addHumans();
 buildHotspots();
+buildAtmosphere();
 buildChecklist();
 
 renderer.domElement.addEventListener('pointermove', onPointerMove);
@@ -1037,6 +1281,20 @@ function animate() {
 
   // Flicker the emergency lamp.
   emergencyLamp.intensity = 1.0 + Math.sin(t * 13) * 0.12 + Math.sin(t * 27) * 0.06;
+
+  // Drift the dust motes slowly upward and recycle them at the ceiling.
+  if (dustPoints) {
+    const pos = dustPoints.geometry.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      let y = pos.getY(i) + 0.0016 + Math.sin(t * 0.5 + i) * 0.0006;
+      let x = pos.getX(i) + Math.sin(t * 0.2 + i) * 0.0008;
+      if (y > ROOM.h - 0.3) y = 0.2;
+      pos.setY(i, y);
+      pos.setX(i, x);
+    }
+    pos.needsUpdate = true;
+    dustPoints.rotation.y = t * 0.01;
+  }
 
   controls.update();
   renderer.render(scene, camera);

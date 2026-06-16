@@ -23,6 +23,21 @@
         <p class="intro-kicker">S.T.A.R. Survival Training</p>
         <h1>Earthquake Rescue Lab</h1>
         <p id="intro-text" class="intro-text"></p>
+
+        <p id="intro-greeting" class="intro-greeting" hidden></p>
+        <div id="intro-login" class="intro-login">
+          <label for="intro-name" class="intro-login-label">Operative name — one-time sign-in</label>
+          <input
+            id="intro-name"
+            class="intro-name"
+            type="text"
+            maxlength="40"
+            placeholder="Enter your name to begin"
+            autocomplete="name"
+          />
+          <p class="intro-login-hint">Your name and activity are saved for this week's exercise.</p>
+        </div>
+
         <ul class="intro-steps">
           <li><span>1</span> Click the glowing markers to investigate each object and answer a survival question.</li>
           <li><span>2</span> Open the <strong>Ranking Board</strong> and drag the 12 action cards from best (1) to worst (12).</li>
@@ -50,12 +65,14 @@
           <span class="scanner-dot"></span>
           <span id="scanner-text">Hover an object to scan it…</span>
         </div>
+        <div id="player-chip" class="player-chip" hidden></div>
       </div>
 
       <div class="hud-right">
         <button id="btn-board" class="btn btn-primary">Ranking Board</button>
-        <button id="btn-expert" class="btn">Expert Key</button>
+        <button id="btn-expert" class="btn">🔒 Expert Key</button>
         <button id="btn-help" class="btn">Help</button>
+        <button id="btn-sound" class="btn" aria-pressed="false" title="Toggle sound">🔊 Sound</button>
         <button id="btn-reset" class="btn btn-ghost">Reset</button>
       </div>
     </header>
