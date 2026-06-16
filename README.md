@@ -160,6 +160,40 @@ can confirm it works. Notes:
 
 ---
 
+## Deploying
+
+The app is a static Vite build (`npm run build` → `dist/`), so it deploys to any
+static host. HTTPS is recommended (and required for the notification service
+worker — local `localhost` also counts).
+
+### Vercel (recommended, included config)
+
+A `vercel.json` is included (framework `vite`, build `npm run build`, output
+`dist`, plus headers so the service worker is never stale and is allowed root
+scope).
+
+1. Push this branch to GitHub (already done).
+2. Go to [vercel.com/new](https://vercel.com/new) and **Import** the
+   `noyo12394/escrow` repository.
+3. Vercel auto-detects Vite — keep the defaults and click **Deploy**.
+4. You get a public URL like `https://escrow-xxxx.vercel.app`.
+
+Or with the CLI:
+
+```bash
+npm i -g vercel
+vercel        # preview deploy
+vercel --prod # production deploy
+```
+
+### Other hosts
+
+- **Netlify** — build command `npm run build`, publish directory `dist`.
+- **GitHub Pages** — build with Vite `base: '/escrow/'` and publish `dist` via a
+  Pages workflow.
+
+---
+
 ## License
 
 Created for classroom and educational use.
