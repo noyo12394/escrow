@@ -232,21 +232,39 @@ function cyl(rt, rb, h, material, x, y, z, segs = 12) {
   return m;
 }
 
-// A low-poly human: capsule torso, sphere head, simple limbs.
+// Roaming crew members, populated by addHumans() and driven by the animate loop.
+const walkers = [];
+
+// A low-poly human with articulated (pivoting) arms and legs so it can walk.
+// The model faces +Z. Returns a group whose userData.parts exposes the joints.
 function makeHuman(color, helmet = false) {
   const g = new THREE.Group();
   const skin = new THREE.MeshStandardMaterial({ color: 0xd9a06b, roughness: 0.8 });
   const cloth = new THREE.MeshStandardMaterial({ color, roughness: 0.85, flatShading: true });
+  const pants = new THREE.MeshStandardMaterial({ color: 0x2c3340, roughness: 0.9 });
+
+  // Upper body bobs gently while walking; legs stay rooted to the floor.
+  const body = new THREE.Group();
+  g.add(body);
 
   const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 0.55, 4, 8), cloth);
   torso.position.y = 1.15;
   torso.castShadow = true;
-  g.add(torso);
+  body.add(torso);
+
+  // Backpack for a touch of rescue-crew realism.
+  const pack = new THREE.Mesh(
+    new THREE.BoxGeometry(0.34, 0.42, 0.18),
+    new THREE.MeshStandardMaterial({ color: 0x33384a, roughness: 0.9 })
+  );
+  pack.position.set(0, 1.2, -0.32);
+  pack.castShadow = true;
+  body.add(pack);
 
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 12, 10), skin);
   head.position.y = 1.78;
   head.castShadow = true;
-  g.add(head);
+  body.add(head);
 
   if (helmet) {
     const h = new THREE.Mesh(
@@ -254,39 +272,136 @@ function makeHuman(color, helmet = false) {
       new THREE.MeshStandardMaterial({ color: 0xffd23b, roughness: 0.5 })
     );
     h.position.y = 1.82;
-    g.add(h);
+    h.castShadow = true;
+    body.add(h);
   }
 
+  const arms = [];
+  const legs = [];
   for (const side of [-1, 1]) {
+    // Shoulder pivot: the arm hangs below the joint so it swings naturally.
+    const shoulder = new THREE.Group();
+    shoulder.position.set(side * 0.36, 1.45, 0);
     const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.09, 0.5, 3, 6), cloth);
-    arm.position.set(side * 0.36, 1.15, 0);
-    arm.rotation.z = side * 0.25;
+    arm.position.set(0, -0.3, 0);
     arm.castShadow = true;
-    g.add(arm);
+    shoulder.add(arm);
+    body.add(shoulder);
+    arms.push(shoulder);
 
-    const leg = new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.11, 0.55, 3, 6),
-      new THREE.MeshStandardMaterial({ color: 0x2c3340, roughness: 0.9 })
-    );
-    leg.position.set(side * 0.15, 0.45, 0);
+    // Hip pivot, attached to the root so feet stay grounded under the bob.
+    const hip = new THREE.Group();
+    hip.position.set(side * 0.15, 0.9, 0);
+    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.55, 3, 6), pants);
+    leg.position.set(0, -0.42, 0);
     leg.castShadow = true;
-    g.add(leg);
+    hip.add(leg);
+    g.add(hip);
+    legs.push(hip);
   }
+
+  g.userData.parts = {
+    body,
+    leftArm: arms[0],
+    rightArm: arms[1],
+    leftLeg: legs[0],
+    rightLeg: legs[1],
+  };
   return g;
 }
 
 function addHumans() {
+  // Each crew member patrols a loop of waypoints [x, z], pausing at stops.
   const crew = [
-    { color: 0x3a6fd2, pos: [-1.2, 0, 1.6], rot: 0.6, helmet: true },
-    { color: 0x2fa66b, pos: [1.4, 0, 1.4], rot: -0.5, helmet: false },
-    { color: 0xc94f8a, pos: [0.2, 0, 2.6], rot: Math.PI, helmet: false },
-    { color: 0xe0863b, pos: [-2.6, 0, 0.2], rot: 1.4, helmet: true },
+    {
+      color: 0x3a6fd2,
+      helmet: true,
+      speed: 0.95,
+      path: [[-5, -4], [-5, 3], [-2, 4.5], [-2, -3]],
+    },
+    {
+      color: 0x2fa66b,
+      helmet: false,
+      speed: 1.15,
+      path: [[5, -4], [5, 3.5], [2, 4.5], [2.5, -3.5]],
+    },
+    {
+      color: 0xc94f8a,
+      helmet: false,
+      speed: 0.8,
+      path: [[-3, 5], [3, 5], [3.5, 2], [-3.5, 2]],
+    },
+    {
+      color: 0xe0863b,
+      helmet: true,
+      speed: 1.05,
+      path: [[-4.5, -5], [4.5, -5], [3, -1.5], [-3, -1.5]],
+    },
   ];
   for (const c of crew) {
     const h = makeHuman(c.color, c.helmet);
-    h.position.set(...c.pos);
-    h.rotation.y = c.rot;
+    const start = c.path[0];
+    h.position.set(start[0], 0, start[1]);
     scene.add(h);
+    walkers.push({
+      group: h,
+      parts: h.userData.parts,
+      path: c.path.map(([x, z]) => new THREE.Vector2(x, z)),
+      idx: 1,
+      speed: c.speed,
+      walkPhase: Math.random() * Math.PI * 2,
+      phase: Math.random() * Math.PI * 2,
+      pauseT: 0,
+    });
+  }
+}
+
+// Advance every roaming crew member by dt seconds (called from animate()).
+function updateWalkers(dt, t) {
+  for (const w of walkers) {
+    const p = w.group.position;
+    const target = w.path[w.idx];
+    const dx = target.x - p.x;
+    const dz = target.y - p.z; // Vector2.y holds the z coordinate
+    const dist = Math.hypot(dx, dz);
+
+    if (w.pauseT > 0) {
+      // Idle: gentle breathing + arm sway, feet planted.
+      w.pauseT -= dt;
+      const idle = Math.sin(t * 1.8 + w.phase) * 0.06;
+      w.parts.leftArm.rotation.x = idle;
+      w.parts.rightArm.rotation.x = -idle;
+      w.parts.leftLeg.rotation.x = 0;
+      w.parts.rightLeg.rotation.x = 0;
+      w.parts.body.position.y = Math.sin(t * 1.8 + w.phase) * 0.012;
+      continue;
+    }
+
+    if (dist < 0.2) {
+      // Reached the waypoint: advance and sometimes take a breather.
+      w.idx = (w.idx + 1) % w.path.length;
+      if (Math.random() < 0.55) w.pauseT = 1.4 + Math.random() * 2.6;
+      continue;
+    }
+
+    const step = Math.min(w.speed * dt, dist);
+    p.x += (dx / dist) * step;
+    p.z += (dz / dist) * step;
+
+    // Smoothly turn to face the direction of travel (model faces +Z).
+    const heading = Math.atan2(dx, dz);
+    let diff = ((heading - w.group.rotation.y + Math.PI) % (Math.PI * 2)) - Math.PI;
+    if (diff < -Math.PI) diff += Math.PI * 2;
+    w.group.rotation.y += diff * Math.min(1, dt * 6);
+
+    // Walk cycle: swing limbs and bob the body in time with the stride.
+    w.walkPhase += step * 7;
+    const swing = Math.sin(w.walkPhase) * 0.5;
+    w.parts.leftLeg.rotation.x = swing;
+    w.parts.rightLeg.rotation.x = -swing;
+    w.parts.leftArm.rotation.x = -swing * 0.85;
+    w.parts.rightArm.rotation.x = swing * 0.85;
+    w.parts.body.position.y = Math.abs(Math.sin(w.walkPhase)) * 0.045;
   }
 }
 
@@ -1261,9 +1376,15 @@ window.addEventListener('resize', () => {
 });
 
 const clock = new THREE.Clock();
+let lastT = 0;
 function animate() {
   requestAnimationFrame(animate);
   const t = clock.getElapsedTime();
+  const dt = Math.min(t - lastT, 0.05); // clamp to avoid jumps after tab is hidden
+  lastT = t;
+
+  // Walk the crew around the basement.
+  updateWalkers(dt, t);
 
   // Animate hotspot markers (bob, spin, pulse).
   for (const g of hotspotMeshes) {
