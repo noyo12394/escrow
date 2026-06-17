@@ -23,6 +23,10 @@ export const WEEK = 1; // this is the "week one" activity
 
 const supabase = supaEnabled ? createClient(url, anonKey) : null;
 
+if (supaEnabled) {
+  console.info('[supabase] Connected - activity logging is active for week', WEEK);
+}
+
 if (!supaEnabled) {
   console.info(
     '[supabase] Not configured (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY missing). ' +
