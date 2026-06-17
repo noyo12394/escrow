@@ -274,6 +274,26 @@ function makeHuman(color, helmet = false) {
     h.position.y = 1.82;
     h.castShadow = true;
     body.add(h);
+
+    // Helmet-mounted flashlight: a forward/down cone plus a glowing lens.
+    const lamp = new THREE.SpotLight(0xfff2cc, 6, 9, Math.PI / 7, 0.5, 1.1);
+    lamp.position.set(0, 1.84, 0.28);
+    const aim = new THREE.Object3D();
+    aim.position.set(0, 0.1, 3.5); // forward (+Z) and toward the floor
+    body.add(aim);
+    lamp.target = aim;
+    body.add(lamp);
+
+    const lens = new THREE.Mesh(
+      new THREE.CircleGeometry(0.07, 14),
+      new THREE.MeshStandardMaterial({
+        color: 0xfff2cc,
+        emissive: 0xfff2cc,
+        emissiveIntensity: 1.6,
+      })
+    );
+    lens.position.set(0, 1.84, 0.3);
+    body.add(lens);
   }
 
   const arms = [];
@@ -352,6 +372,7 @@ function addHumans() {
       walkPhase: Math.random() * Math.PI * 2,
       phase: Math.random() * Math.PI * 2,
       pauseT: 0,
+      working: false,
     });
   }
 }
@@ -366,21 +387,36 @@ function updateWalkers(dt, t) {
     const dist = Math.hypot(dx, dz);
 
     if (w.pauseT > 0) {
-      // Idle: gentle breathing + arm sway, feet planted.
       w.pauseT -= dt;
-      const idle = Math.sin(t * 1.8 + w.phase) * 0.06;
-      w.parts.leftArm.rotation.x = idle;
-      w.parts.rightArm.rotation.x = -idle;
-      w.parts.leftLeg.rotation.x = 0;
-      w.parts.rightLeg.rotation.x = 0;
-      w.parts.body.position.y = Math.sin(t * 1.8 + w.phase) * 0.012;
+      if (w.working) {
+        // Busy at a station: lean in and pump both arms like working a task.
+        const pump = Math.sin(t * 4 + w.phase) * 0.45;
+        w.parts.leftArm.rotation.x = -1.15 + pump;
+        w.parts.rightArm.rotation.x = -1.15 - pump;
+        w.parts.body.rotation.x = 0.2;
+        w.parts.body.position.y = -0.05 + Math.sin(t * 4 + w.phase) * 0.012;
+        w.parts.leftLeg.rotation.x = 0.18;
+        w.parts.rightLeg.rotation.x = -0.1;
+      } else {
+        // Resting: gentle breathing + arm sway, feet planted.
+        const idle = Math.sin(t * 1.8 + w.phase) * 0.06;
+        w.parts.leftArm.rotation.x = idle;
+        w.parts.rightArm.rotation.x = -idle;
+        w.parts.body.rotation.x = 0;
+        w.parts.leftLeg.rotation.x = 0;
+        w.parts.rightLeg.rotation.x = 0;
+        w.parts.body.position.y = Math.sin(t * 1.8 + w.phase) * 0.012;
+      }
       continue;
     }
 
     if (dist < 0.2) {
-      // Reached the waypoint: advance and sometimes take a breather.
+      // Reached the waypoint: advance and often stop to work or rest.
       w.idx = (w.idx + 1) % w.path.length;
-      if (Math.random() < 0.55) w.pauseT = 1.4 + Math.random() * 2.6;
+      if (Math.random() < 0.7) {
+        w.pauseT = 1.6 + Math.random() * 2.8;
+        w.working = Math.random() < 0.6;
+      }
       continue;
     }
 
@@ -401,6 +437,7 @@ function updateWalkers(dt, t) {
     w.parts.rightLeg.rotation.x = -swing;
     w.parts.leftArm.rotation.x = -swing * 0.85;
     w.parts.rightArm.rotation.x = swing * 0.85;
+    w.parts.body.rotation.x = 0; // straighten up after any work pose
     w.parts.body.position.y = Math.abs(Math.sin(w.walkPhase)) * 0.045;
   }
 }
