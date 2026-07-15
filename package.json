@@ -1,0 +1,19 @@
+{
+  "name": "star-earthquake-rescue-lab",
+  "private": true,
+  "version": "1.0.0",
+  "description": "S.T.A.R. Earthquake Rescue Lab - a browser-based 3D educational escape-room game about earthquake survival teamwork.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.108.2",
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

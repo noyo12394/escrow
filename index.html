@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="S.T.A.R. Earthquake Rescue Lab - a 3D educational escape-room game about earthquake survival teamwork."
+    />
+    <title>S.T.A.R. Earthquake Rescue Lab</title>
+    <meta name="theme-color" content="#05080f" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <!-- 3D scene mounts here -->
+    <canvas id="scene"></canvas>
+
+    <!-- Loading / intro overlay -->
+    <div id="intro" class="overlay intro-overlay">
+      <div class="intro-card">
+        <p class="intro-kicker">S.T.A.R. Survival Training</p>
+        <h1>Earthquake Rescue Lab</h1>
+        <p id="intro-text" class="intro-text"></p>
+
+        <p id="intro-greeting" class="intro-greeting" hidden></p>
+        <div id="intro-login" class="intro-login">
+          <label for="intro-name" class="intro-login-label">Operative name — one-time sign-in</label>
+          <input
+            id="intro-name"
+            class="intro-name"
+            type="text"
+            maxlength="40"
+            placeholder="Enter your name to begin"
+            autocomplete="name"
+          />
+          <p class="intro-login-hint">Your name and activity are saved for this week's exercise.</p>
+        </div>
+
+        <ul class="intro-steps">
+          <li><span>1</span> Click the glowing markers to investigate each object and answer a survival question.</li>
+          <li><span>2</span> Open the <strong>Ranking Board</strong> and drag the 12 action cards from best (1) to worst (12).</li>
+          <li><span>3</span> Submit to compare your order with the rescue experts and read your readiness score.</li>
+        </ul>
+        <button id="intro-start" class="btn btn-primary btn-lg">Enter the Basement</button>
+      </div>
+    </div>
+
+    <!-- Heads-up display -->
+    <header id="hud" class="hud" hidden>
+      <div class="hud-left">
+        <div class="hud-title">
+          <span class="hud-badge">S.T.A.R.</span>
+          <span>Earthquake Rescue Lab</span>
+        </div>
+        <div class="readiness">
+          <div class="readiness-label">
+            <span>Rescue Readiness</span>
+            <span id="readiness-pct">0%</span>
+          </div>
+          <div class="readiness-bar"><div id="readiness-fill" class="readiness-fill"></div></div>
+        </div>
+        <div id="scanner" class="scanner">
+          <span class="scanner-dot"></span>
+          <span id="scanner-text">Hover an object to scan it…</span>
+        </div>
+        <div id="player-chip" class="player-chip" hidden></div>
+      </div>
+
+      <div class="hud-right">
+        <button id="btn-board" class="btn btn-primary">Ranking Board</button>
+        <button id="btn-expert" class="btn">🔒 Expert Key</button>
+        <button id="btn-help" class="btn">Help</button>
+        <button id="btn-sound" class="btn" aria-pressed="false" title="Toggle sound">🔊 Sound</button>
+        <button id="btn-reset" class="btn btn-ghost">Reset</button>
+      </div>
+    </header>
+
+    <!-- Mission checklist -->
+    <aside id="checklist" class="checklist" hidden>
+      <h2>Mission Checklist</h2>
+      <p class="checklist-sub">Investigate every station, then rank the actions.</p>
+      <ul id="checklist-items"></ul>
+      <div class="checklist-progress">
+        <span id="checklist-count">0 / 0 stations investigated</span>
+      </div>
+    </aside>
+
+    <!-- Generic modal shell (used for quiz, help, expert key, results) -->
+    <div id="modal" class="overlay modal-overlay" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <button id="modal-close" class="modal-close" aria-label="Close dialog">×</button>
+        <div id="modal-body" class="modal-body"></div>
+      </div>
+    </div>
+
+    <!-- Live region for screen-reader announcements -->
+    <div id="live" class="sr-only" aria-live="polite"></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
