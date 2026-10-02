@@ -1,5 +1,5 @@
 // =============================================================================
-// S.T.A.R. Earthquake Rescue Lab - game data
+// Earthquake Rescue Lab - game data
 // -----------------------------------------------------------------------------
 // All survival content lives here so the scene/UI code can stay generic.
 //
@@ -7,7 +7,7 @@
 //   - id            : stable key used across the app
 //   - action        : the full action text shown on cards and tables
 //   - short         : a compact label for the 3D hover scanner
-//   - expertRank    : the official S.T.A.R. expert ranking (1 best .. 12 worst)
+//   - expertRank    : the official expert ranking (1 best .. 12 worst)
 //   - hotspotId     : which 3D object opens this card's quiz (may be shared)
 //   - clue          : the expert rationale revealed after answering
 //   - question      : a short survival question tied to the object
@@ -16,7 +16,7 @@
 // =============================================================================
 
 export const SCENARIO = {
-  title: 'S.T.A.R. Earthquake Rescue Lab',
+  title: 'Earthquake Rescue Lab',
   intro:
     'A magnitude 7.4 earthquake has struck. You and three coworkers are trapped ' +
     'in the basement of a damaged multi-story office building. The stairwell exit ' +
@@ -28,7 +28,7 @@ export const SCENARIO = {
     'then compare with the rescue experts.',
 };
 
-// The 12 action cards. expertRank is the authoritative S.T.A.R. answer key.
+// The 12 action cards. expertRank is the authoritative expert answer key.
 export const CARDS = [
   {
     id: 'utilities',

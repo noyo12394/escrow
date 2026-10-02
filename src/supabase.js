@@ -1,5 +1,5 @@
 // =============================================================================
-// Supabase activity logging for S.T.A.R. Earthquake Rescue Lab
+// Supabase activity logging for Earthquake Rescue Lab
 // -----------------------------------------------------------------------------
 // Records every player's activity for the weekly exercise. Configured entirely
 // through environment variables so no secrets live in the repo:

@@ -1,5 +1,5 @@
 // =============================================================================
-// S.T.A.R. Earthquake Rescue Lab - main entry
+// Earthquake Rescue Lab - main entry
 // Vite + vanilla JS + Three.js. Procedural geometry only (no external assets).
 // =============================================================================
 
@@ -23,7 +23,7 @@ import {
 
 // Instructor passcode that unlocks the Expert Key before submission.
 const INSTRUCTOR_KEY = 'instruct26';
-const PLAYER_KEY = 'star-player-name';
+const PLAYER_KEY = 'earthquake-rescue-player-name';
 
 // The signed-in operative's name (null until they sign in this session).
 let playerName = localStorage.getItem(PLAYER_KEY) || null;
@@ -1028,7 +1028,7 @@ function downloadReport(score) {
   const dateStr = new Date().toLocaleString();
 
   let txt = '';
-  txt += 'S.T.A.R. EARTHQUAKE RESCUE LAB - SURVIVAL RANKING REPORT\n';
+  txt += 'EARTHQUAKE RESCUE LAB - SURVIVAL RANKING REPORT\n';
   txt += `${line}\n`;
   txt += `Generated: ${dateStr}\n`;
   txt += `Total Score (sum of |Player - Expert|, lower is better): ${score.total}\n`;
@@ -1053,7 +1053,7 @@ function downloadReport(score) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `star-rescue-report-${Date.now()}.txt`;
+  a.download = `earthquake-rescue-report-${Date.now()}.txt`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -1138,7 +1138,7 @@ function openExpert(via = 'submission') {
     `
     <p class="modal-kicker">Instructor Reveal</p>
     <h2>Expert Order &amp; Reasoning</h2>
-    <p class="board-intro">The official S.T.A.R. ranking from <strong>1 (most helpful)</strong> to <strong>12 (most dangerous)</strong>, with the reasoning rescue specialists use.</p>
+    <p class="board-intro">The official expert ranking from <strong>1 (most helpful)</strong> to <strong>12 (most dangerous)</strong>, with the reasoning rescue specialists use.</p>
     <ol class="expert-list">${itemsHtml}</ol>
     <div class="modal-actions">
       <button class="btn btn-primary" id="expert-close">Close</button>

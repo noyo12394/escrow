@@ -1,8 +1,8 @@
 {
-  "name": "star-earthquake-rescue-lab",
+  "name": "earthquake-rescue-lab",
   "private": true,
   "version": "1.0.0",
-  "description": "S.T.A.R. Earthquake Rescue Lab - a browser-based 3D educational escape-room game about earthquake survival teamwork.",
+  "description": "Earthquake Rescue Lab - a browser-based 3D educational escape-room game about earthquake survival teamwork.",
   "type": "module",
   "scripts": {
     "dev": "vite",

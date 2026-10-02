@@ -1,5 +1,5 @@
 /* =============================================================================
- * S.T.A.R. Earthquake Rescue Lab - Service Worker
+ * Earthquake Rescue Lab - Service Worker
  * -----------------------------------------------------------------------------
  * Runs independently of any open tab, so it can display notifications even
  * after the site is closed. Handles:
@@ -13,19 +13,19 @@
 
 const REMINDERS = [
   {
-    title: 'S.T.A.R. Rescue Check-In',
+    title: 'Rescue Check-In',
     body: 'Monitor the battery radio for emergency updates and check the team.',
   },
   {
-    title: 'S.T.A.R. Water Reminder',
+    title: 'Water Reminder',
     body: 'Ration water carefully — secure and purify your supply before food.',
   },
   {
-    title: 'S.T.A.R. Signal Reminder',
+    title: 'Signal Reminder',
     body: 'Run your day/night signaling so rescuers can locate you.',
   },
   {
-    title: 'S.T.A.R. Safety Reminder',
+    title: 'Safety Reminder',
     body: 'Keep utilities off and open flames away — stay safe until rescue.',
   },
 ];
@@ -38,7 +38,7 @@ function showReminder(extra = {}) {
   const r = pickReminder();
   return self.registration.showNotification(r.title, {
     body: r.body,
-    tag: 'star-reminder',
+    tag: 'rescue-reminder',
     icon: '/icon.svg',
     badge: '/icon.svg',
     renotify: true,
@@ -53,14 +53,14 @@ self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim(
 
 // --- Periodic Background Sync: fires while the site is closed ----------------
 self.addEventListener('periodicsync', (event) => {
-  if (event.tag === 'star-rescue-reminder') {
+  if (event.tag === 'earthquake-rescue-reminder') {
     event.waitUntil(showReminder());
   }
 });
 
 // --- One-off Background Sync fallback ---------------------------------------
 self.addEventListener('sync', (event) => {
-  if (event.tag === 'star-rescue-reminder') {
+  if (event.tag === 'earthquake-rescue-reminder') {
     event.waitUntil(showReminder());
   }
 });
@@ -71,12 +71,12 @@ self.addEventListener('push', (event) => {
   try {
     payload = event.data ? event.data.json() : {};
   } catch {
-    payload = { title: 'S.T.A.R. Rescue Alert', body: event.data ? event.data.text() : '' };
+    payload = { title: 'Earthquake Rescue Alert', body: event.data ? event.data.text() : '' };
   }
   event.waitUntil(
-    self.registration.showNotification(payload.title || 'S.T.A.R. Rescue Alert', {
+    self.registration.showNotification(payload.title || 'Earthquake Rescue Alert', {
       body: payload.body || 'New rescue update.',
-      tag: payload.tag || 'star-push',
+      tag: payload.tag || 'rescue-push',
       icon: '/icon.svg',
       badge: '/icon.svg',
       data: { url: payload.url || '/' },
@@ -96,7 +96,7 @@ self.addEventListener('message', (event) => {
     }
   }
   if (msg.type === 'show-now') {
-    showReminder({ tag: 'star-now', renotify: true });
+    showReminder({ tag: 'rescue-now', renotify: true });
   }
 });
 

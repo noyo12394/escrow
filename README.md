@@ -1,4 +1,4 @@
-# S.T.A.R. Earthquake Rescue Lab
+# Earthquake Rescue Lab
 
 A browser-based **3D educational escape-room game** built with **Vite + vanilla
 JavaScript + Three.js**. The theme is a teamwork survival exercise: you and three

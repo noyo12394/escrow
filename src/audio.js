@@ -1,5 +1,5 @@
 // =============================================================================
-// Procedural audio for S.T.A.R. Earthquake Rescue Lab
+// Procedural audio for Earthquake Rescue Lab
 // -----------------------------------------------------------------------------
 // All sound is synthesized with the Web Audio API - no audio files, so it keeps
 // the "procedural / no external assets" rule and works fully offline.
@@ -10,7 +10,7 @@
 // first click (we do this from the intro "Enter" button).
 // =============================================================================
 
-const MUTE_KEY = 'star-muted';
+const MUTE_KEY = 'earthquake-rescue-muted';
 
 let ctx = null;
 let master = null;

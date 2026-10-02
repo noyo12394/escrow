@@ -1,5 +1,5 @@
 -- =============================================================================
--- S.T.A.R. Earthquake Rescue Lab - Supabase schema
+-- Earthquake Rescue Lab - Supabase schema
 -- Run this in your Supabase project: SQL Editor -> New query -> paste -> Run.
 -- =============================================================================
 

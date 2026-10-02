@@ -8,5 +8,5 @@
   <rect width="192" height="192" rx="36" fill="#05080f"/>
   <path d="M40 132 L74 60 L96 104 L112 78 L152 132 Z" fill="none" stroke="url(#g)" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
   <circle cx="96" cy="44" r="12" fill="#ff5a6e"/>
-  <text x="96" y="172" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="700" fill="#e8eefc" text-anchor="middle">S.T.A.R.</text>
+  <text x="96" y="172" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#e8eefc" text-anchor="middle">RESCUE</text>
 </svg>

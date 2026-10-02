@@ -1,5 +1,5 @@
 // =============================================================================
-// Background notifications for S.T.A.R. Earthquake Rescue Lab
+// Background notifications for Earthquake Rescue Lab
 // -----------------------------------------------------------------------------
 // Goal (from the request): an "Enable Alerts" button that pops system
 // notifications — rescue-drill reminders — that still fire even after the
@@ -21,8 +21,8 @@
 //     page is only backgrounded.
 // =============================================================================
 
-const STORAGE_KEY = 'star-alerts-enabled';
-const SYNC_TAG = 'star-rescue-reminder';
+const STORAGE_KEY = 'earthquake-rescue-alerts-enabled';
+const SYNC_TAG = 'earthquake-rescue-reminder';
 const SW_URL = '/sw.js';
 
 let swRegistration = null;
@@ -132,7 +132,7 @@ async function onEnableClick(btn) {
   // Confirmation notification (shown by the SW so it persists when closed).
   await showViaServiceWorker('Rescue alerts enabled', {
     body: 'You will get drill reminders even after you close this tab.',
-    tag: 'star-welcome',
+    tag: 'rescue-welcome',
   });
 
   api.toast('Background alerts enabled ✓', 'good', 3200);
@@ -164,9 +164,9 @@ async function enableBackgroundReminders() {
 }
 
 async function sendTestNotification() {
-  const ok = await showViaServiceWorker('S.T.A.R. Rescue Drill', {
+  const ok = await showViaServiceWorker('Earthquake Rescue Drill', {
     body: 'Test alert: this is how reminders will appear — even with the site closed.',
-    tag: 'star-test',
+    tag: 'rescue-test',
     requireInteraction: false,
   });
   if (ok) api.toast('Test alert sent — check your notifications.', 'good');
